@@ -1,3 +1,6 @@
 [submodule "jumpcutter"]
 	path = jumpcutter
 	url = https://github.com/carykh/jumpcutter.git
+[submodule "video-remove-silence"]
+	path = video-remove-silence
+	url = https://github.com/excitoon/video-remove-silence.git

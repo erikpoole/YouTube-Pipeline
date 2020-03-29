@@ -15,6 +15,6 @@ Setup -
 
 
 Complete - 
-1) Find python audio library
+1) Find python audio library (sorta)
 1) Read in audio
 1) Find blank space
