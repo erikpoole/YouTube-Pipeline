@@ -1,0 +1,18 @@
+  <producer id="producer1" title="Anonymous Submission" in="00:00:00.000" out="FIX ME 00:00:13.667">
+    <property name="length">FIX ME 00:00:13.733</property>
+    <property name="eof">pause</property>
+    <property name="resource">FIX ME 1.mp4</property>
+    <property name="audio_index">1</property>
+    <property name="video_index">0</property>
+    <property name="mute_on_pause">0</property>
+    <property name="mlt_service">avformat-novalidate</property>
+    <property name="seekable">1</property>
+    <property name="aspect_ratio">1</property>
+    <property name="ignore_points">0</property>
+    <property name="shotcut:caption">FIX ME 2.mp4</property>
+    <property name="shotcut:detail">FIX ME 2.mp4</property>
+    <property name="shotcut:comment"></property>
+    <property name="shotcut:skipConvert">1</property>
+    <property name="global_feed">1</property>
+    <property name="xml">was here</property>
+  </producer>

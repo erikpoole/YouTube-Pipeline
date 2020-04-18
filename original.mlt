@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mlt LC_NUMERIC="en_US" version="6.7.0" title="Shotcut version 18.03.06" producer="main bin">
+  <profile description="HD 1080p 30 fps" width="1920" height="1080" progressive="1" sample_aspect_num="1" sample_aspect_den="1" display_aspect_num="16" display_aspect_den="9" frame_rate_num="30" frame_rate_den="1" colorspace="709"/>
+  <playlist id="main bin">
+    <property name="xml_retain">1</property>
+  </playlist>
+  <playlist id="background"/>
+  <producer id="producer0" title="Anonymous Submission" in="00:00:00.000" out="00:00:13.667">
+    <property name="length">00:00:13.733</property>
+    <property name="eof">pause</property>
+    <property name="resource">1.mp4</property>
+    <property name="audio_index">1</property>
+    <property name="video_index">0</property>
+    <property name="mute_on_pause">0</property>
+    <property name="mlt_service">avformat-novalidate</property>
+    <property name="seekable">1</property>
+    <property name="aspect_ratio">1</property>
+    <property name="ignore_points">0</property>
+    <property name="shotcut:caption">1.mp4</property>
+    <property name="shotcut:detail">1.mp4</property>
+    <property name="shotcut:skipConvert">1</property>
+    <property name="global_feed">1</property>
+    <property name="xml">was here</property>
+    <property name="shotcut:hash">ee4179cf1121d9a29f2bff808aba9cfa</property>
+    <property name="shotcut:comment"></property>
+    <filter id="filter0" out="00:00:00.967">
+      <property name="start">1</property>
+      <property name="level">0=0; 29=1</property>
+      <property name="mlt_service">brightness</property>
+      <property name="shotcut:filter">fadeInBrightness</property>
+      <property name="alpha">1</property>
+    </filter>
+    <filter id="filter1" in="00:00:12.733" out="00:00:13.667">
+      <property name="start">1</property>
+      <property name="level">0=1; 28=0</property>
+      <property name="mlt_service">brightness</property>
+      <property name="shotcut:filter">fadeOutBrightness</property>
+      <property name="alpha">1</property>
+    </filter>
+  </producer>
+  <producer id="producer1" title="Anonymous Submission" in="00:00:00.000" out="00:00:13.667">
+    <property name="length">00:00:13.733</property>
+    <property name="eof">pause</property>
+    <property name="resource">2.mp4</property>
+    <property name="audio_index">1</property>
+    <property name="video_index">0</property>
+    <property name="mute_on_pause">0</property>
+    <property name="mlt_service">avformat-novalidate</property>
+    <property name="seekable">1</property>
+    <property name="aspect_ratio">1</property>
+    <property name="shotcut:hash">ee4179cf1121d9a29f2bff808aba9cfa</property>
+    <property name="ignore_points">0</property>
+    <property name="shotcut:caption">2.mp4</property>
+    <property name="shotcut:detail">2.mp4</property>
+    <property name="shotcut:comment"></property>
+    <property name="shotcut:skipConvert">1</property>
+    <property name="global_feed">1</property>
+    <property name="xml">was here</property>
+    <filter id="filter2" in="00:00:12.733" out="00:00:13.667">
+      <property name="start">1</property>
+      <property name="level">0=1; 28=0</property>
+      <property name="mlt_service">brightness</property>
+      <property name="shotcut:filter">fadeOutBrightness</property>
+      <property name="alpha">1</property>
+    </filter>
+  </producer>
+  <producer id="producer2" title="Anonymous Submission" in="00:00:00.000" out="00:00:18.633">
+    <property name="length">04:00:00.000</property>
+    <property name="eof">pause</property>
+    <property name="resource">C:\Users\Mahkumazahn\Videos\Testing/outro_backdrop.png</property>
+    <property name="ttl">1</property>
+    <property name="aspect_ratio">1</property>
+    <property name="progressive">1</property>
+    <property name="seekable">1</property>
+    <property name="mlt_service">qimage</property>
+    <property name="shotcut:hash">94cc681a22c59d893af8579cd76600a5</property>
+    <property name="ignore_points">0</property>
+    <property name="global_feed">1</property>
+    <property name="xml">was here</property>
+  </producer>
+  <playlist id="playlist0">
+    <property name="shotcut:video">1</property>
+    <property name="shotcut:name">V1</property>
+    <entry producer="producer0" in="00:00:00.000" out="00:00:13.667"/>
+    <entry producer="producer1" in="00:00:00.000" out="00:00:13.667"/>
+    <entry producer="producer2" in="00:00:00.000" out="00:00:18.633"/>
+  </playlist>
+  <producer id="producer3" title="Anonymous Submission" in="00:00:00.000" out="00:00:27.600">
+    <property name="length">00:00:27.633</property>
+    <property name="eof">pause</property>
+    <property name="resource">C:\Users\Mahkumazahn\Videos\Testing/Juan_Outro.wav</property>
+    <property name="audio_index">0</property>
+    <property name="video_index">-1</property>
+    <property name="mute_on_pause">0</property>
+    <property name="mlt_service">avformat-novalidate</property>
+    <property name="seekable">1</property>
+    <property name="shotcut:hash">8870b6f55ecdf442e1a1341b8035d975</property>
+    <property name="ignore_points">0</property>
+    <property name="shotcut:caption">Juan_Outro.wav</property>
+    <property name="shotcut:detail">Juan_Outro.wav</property>
+    <property name="shotcut:comment"></property>
+    <property name="shotcut:skipConvert">1</property>
+    <property name="global_feed">1</property>
+    <property name="xml">was here</property>
+  </producer>
+  <playlist id="playlist1">
+    <property name="shotcut:audio">1</property>
+    <property name="shotcut:name">A1</property>
+    <blank length="00:00:05.400"/>
+    <entry producer="producer3" in="00:00:00.000" out="00:00:26.967"/>
+  </playlist>
+  <tractor id="tractor0" title="Shotcut version 18.03.06" global_feed="1" in="00:00:00.000" out="00:00:46.033">
+    <property name="shotcut">1</property>
+    <track producer="background"/>
+    <track producer="playlist0"/>
+    <track producer="playlist1" hide="video"/>
+    <transition id="transition0">
+      <property name="a_track">0</property>
+      <property name="b_track">1</property>
+      <property name="mlt_service">mix</property>
+      <property name="always_active">1</property>
+      <property name="sum">1</property>
+    </transition>
+    <transition id="transition1">
+      <property name="a_track">0</property>
+      <property name="b_track">1</property>
+      <property name="version">0.9</property>
+      <property name="mlt_service">frei0r.cairoblend</property>
+      <property name="disable">1</property>
+    </transition>
+    <transition id="transition2">
+      <property name="a_track">0</property>
+      <property name="b_track">2</property>
+      <property name="mlt_service">mix</property>
+      <property name="always_active">1</property>
+      <property name="sum">1</property>
+    </transition>
+  </tractor>
+</mlt>
