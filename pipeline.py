@@ -1,28 +1,77 @@
 import os
 import shutil
-import lxml.etree as et
 
 from moviepy.editor import VideoFileClip
+import numpy as np
+import lxml.etree as et
 
 CLIPS_DIR = "./clips"
+VIDEO_FPS = 30
+AUDIO_FPS = 48000
+CHUNK_DURATION = .1             # in seconds
+SILENT_CHUNKS_REQUIRED = 10
+SILENCE_PADDING_CHUNKS = 2
+AUDIO_THRESHOLD = .03           # stolen from jumpcutter, might need tweaking
 
 def main():
-    cleanup_last_run()
+    # cleanup_last_run()
 
     # moving files maybe not necessary if we're not actually removing space, 
     # just creating xml
-    print("moving files from pending")
-    os.mkdir(CLIPS_DIR)
-    file_paths = copy_pending_files()
+    # print("moving files from pending")
+    # os.mkdir(CLIPS_DIR)
+    # file_paths = copy_pending_files()
 
-    root = get_element_from_template("skeleton")
-    add_video_nodes(root, file_paths)
+    # root = get_element_from_template("skeleton")
+    # add_video_nodes(root, file_paths)
 
     # print("removing silence")
     # remove_silence(file_paths)
 
     # will need a rename
-    et.ElementTree(root).write("output.mlt", pretty_print=True)
+    # et.ElementTree(root).write("output.mlt", pretty_print=True)
+
+    print(find_silences("audio_test.mp4"))
+
+def find_silences(path):
+    # not handling channels
+    # verify audio fps is 44.1khz as opposed to 48khz, if not pass argument "audio_fps=48000"
+    clip = VideoFileClip(path, audio_fps=AUDIO_FPS)
+    print(clip.duration)
+    print(clip.audio.fps)
+
+    # chunk_duration is in seconds (e.g. "1" equals 44100), last chunk will have empty audio to pad the end
+    # each sound value will have a range from 1 to -1, where 1 and -1 represent max volume
+    audio_chunks = clip.audio.iter_chunks(chunk_duration=CHUNK_DURATION)
+    silent_sections = []
+    section_start = -1
+    for index, chunk in enumerate(audio_chunks):
+        if section_start < 0 and is_silent(chunk):
+            # start silent_section
+            section_start = index
+            next
+        if section_start >= 0 and not is_silent(chunk):
+            # end silent_section
+            if index - section_start >= SILENT_CHUNKS_REQUIRED:
+                # start is inclusive, end is exclusive
+                add_silent_section(silent_sections, section_start, index)
+            section_start = -1
+            next
+    
+    # catch last section if empty
+    if section_start >= 0 and (len(tuple(audio_chunks)) - 1) - section_start >= SILENT_CHUNKS_REQUIRED:
+        add_silent_section(silent_sections, section_start, len(tuple(audio_chunks) - 1))
+    
+    return silent_sections
+    
+def is_silent(chunk):
+    if (abs(np.amin(chunk)) > AUDIO_THRESHOLD) or np.amax(chunk) > AUDIO_THRESHOLD:
+        return False
+    return True
+
+def add_silent_section(sections, start, end):
+    # Pads sounded sections with silence
+    sections.append([start + SILENCE_PADDING_CHUNKS, end - SILENCE_PADDING_CHUNKS])
 
 def get_element_from_template(name):
     path = "./xml_templates/" + name + ".xml"
