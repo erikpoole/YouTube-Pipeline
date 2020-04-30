@@ -125,18 +125,9 @@ def seconds_to_timestamp(seconds):
 #         tree.insert(2 + index, producer)
 
 class MLTFile:
-    def __init__(self, name):
-        self.name = name
-        self.root = self.__get_element_from_template("skeleton")
-        self.producer_number = 0
 
-    def __get_element_from_template(self, name):
-        path = "./xml_templates/" + name + ".xml"
-        tree = et.parse(path, et.XMLParser(remove_blank_text=True))
-        return tree.getroot()
 
-    def write(self):
-        et.ElementTree(self.root).write(self.name, pretty_print=True)
+asdfasdf
 
 def cleanup_last_run():
     if os.path.exists(CLIPS_DIR):
