@@ -1,6 +1,7 @@
 import os
 import shutil
 import time
+from datetime import date
 
 from moviepy.editor import VideoFileClip
 import numpy as np
@@ -21,16 +22,9 @@ def main():
     # os.mkdir(CLIPS_DIR)
     # file_paths = copy_pending_files()
 
-    # root = get_element_from_template("skeleton")
-    # add_video_nodes(root, file_paths)
-
-    # print("removing silence")
-    # remove_silence(file_paths)
-
-    # will need a rename
-    # et.ElementTree(root).write("output.mlt", pretty_print=True)
-
+    mlt = MLTFile(date.today().strftime("%b-%d-%Y.mlt"))
     print(find_silences("audio_test.mp4"))
+    mlt.write()
 
 # moving files maybe not necessary if we're not actually editing files, just creating xml
 def copy_pending_files():
@@ -105,35 +99,44 @@ def chunk_index_to_seconds(index):
 def seconds_to_timestamp(seconds):
     partial_seconds = seconds - int(seconds)
     return "%s%.3f" % (time.strftime("%H:%M:%S", time.gmtime(seconds)), partial_seconds)
-    
-def get_element_from_template(name):
-    path = "./xml_templates/" + name + ".xml"
-    tree = et.parse(path, et.XMLParser(remove_blank_text=True))
-    return tree.getroot()
 
 # needs rework to be add nodes for one video
-def add_video_nodes(tree, file_paths):
-    video_playlist = tree.find(".//*[@id='video_playlist']")
-    for index, path in enumerate(file_paths):
-        clip_length = VideoFileClip(path).duration
+# def add_video_nodes(tree, file_paths):
+#     video_playlist = tree.find(".//*[@id='video_playlist']")
+#     for index, path in enumerate(file_paths):
+#         clip_length = VideoFileClip(path).duration
 
-        # add playlist entry
-        entry = et.Element('entry')
-        entry.attrib["producer"] = str(index)
-        entry.attrib["in"] = "00:00:00.000"
-        entry.attrib["out"] = seconds_to_timestamp(clip_length)
-        video_playlist.append(entry)
+#         # add playlist entry
+#         entry = et.Element('entry')
+#         entry.attrib["producer"] = str(index)
+#         entry.attrib["in"] = "00:00:00.000"
+#         entry.attrib["out"] = seconds_to_timestamp(clip_length)
+#         video_playlist.append(entry)
         
-        # add producer entry
-        producer = get_element_from_template("producer")
-        producer.attrib["id"] = str(index)
-        producer.attrib["out"] = "00:00:" + str(clip_length)
-        producer.find(".//*[@name='length']").text = "00:00:" + str(clip_length)
-        producer.find(".//*[@name='resource']").text = path
-        producer.find(".//*[@name='shotcut:caption']").text = path
-        producer.find(".//*[@name='shotcut:detail']").text = path
-        # producers must be inserted above playlists and tractor to satisfy shotcut
-        tree.insert(2 + index, producer)
+#         # add producer entry
+#         producer = get_element_from_template("producer")
+#         producer.attrib["id"] = str(index)
+#         producer.attrib["out"] = "00:00:" + str(clip_length)
+#         producer.find(".//*[@name='length']").text = "00:00:" + str(clip_length)
+#         producer.find(".//*[@name='resource']").text = path
+#         producer.find(".//*[@name='shotcut:caption']").text = path
+#         producer.find(".//*[@name='shotcut:detail']").text = path
+#         # producers must be inserted above playlists and tractor to satisfy shotcut
+#         tree.insert(2 + index, producer)
+
+class MLTFile:
+    def __init__(self, name):
+        self.name = name
+        self.root = self.__get_element_from_template("skeleton")
+        self.producer_number = 0
+
+    def __get_element_from_template(self, name):
+        path = "./xml_templates/" + name + ".xml"
+        tree = et.parse(path, et.XMLParser(remove_blank_text=True))
+        return tree.getroot()
+
+    def write(self):
+        et.ElementTree(self.root).write(self.name, pretty_print=True)
 
 def cleanup_last_run():
     if os.path.exists(CLIPS_DIR):
