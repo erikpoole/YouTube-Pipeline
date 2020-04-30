@@ -23,7 +23,7 @@ def main():
     # file_paths = copy_pending_files()
 
     mlt = MLTFile(date.today().strftime("%b-%d-%Y.mlt"))
-    print(find_silences("audio_test.mp4"))
+    print(find_noisy_sections("audio_test_2.mp4"))
     mlt.write()
 
 # moving files maybe not necessary if we're not actually editing files, just creating xml
@@ -44,7 +44,7 @@ def copy_pending_files():
 
     return new_paths
 
-def find_silences(path):
+def find_noisy_sections(path):
     # not handling channels
     clip = VideoFileClip(path, audio_fps=AUDIO_FPS)
     print(clip.duration)
@@ -53,42 +53,50 @@ def find_silences(path):
     # chunk_duration is in seconds (e.g. "1" equals 44100), last chunk will have empty audio to pad the end
     # each sound value will have a range from 1 to -1, where 1 and -1 represent max volume
     audio_chunks = clip.audio.iter_chunks(chunk_duration=CHUNK_DURATION)
-    silent_sections = []
-    section_start = -1
+    noisy_sections = []
+    noisy_start = -1
+    noisy_end = -1
     num_sections = 0
     for index, chunk in enumerate(audio_chunks):
         num_sections = num_sections + 1
-        if section_start < 0 and is_silent(chunk):
-            # start silent_section
-            section_start = index
+        if noisy_start < 0 and is_noisy(chunk):
+            # if wasn't noisy and now is - set noisy_start
+            noisy_start = index
             next
-        if section_start >= 0 and not is_silent(chunk):
-            # end silent_section
-            if index - section_start >= SILENT_CHUNKS_REQUIRED:
-                # start is inclusive, end is exclusive
-                add_silent_section(silent_sections, section_start, index)
-            section_start = -1
-            next
-    
-    # catch last section if empty
-    if section_start >= 0 and (num_sections - 1) - section_start >= SILENT_CHUNKS_REQUIRED:
-        add_silent_section(silent_sections, section_start, (num_sections - 1))
-    
-    return silent_sections
-    
-def is_silent(chunk):
-    if (abs(np.amin(chunk)) > AUDIO_THRESHOLD) or np.amax(chunk) > AUDIO_THRESHOLD:
-        return False
-    return True
+        if noisy_start >= 0 and not is_noisy(chunk):
+            if noisy_end < 0:
+                # if was noisy and now isn't - set noisy_end
+                noisy_end = index
+                next
+            if index - noisy_end >= SILENT_CHUNKS_REQUIRED:
+                # if hasn't been noisy for SILENT_CHUNKS_REQUIRED, add noisy section
+                add_noisy_section(clip.duration, noisy_sections, noisy_start, noisy_end)
+                noisy_start = -1
+                noisy_end = -1
 
-def add_silent_section(sections, start, end):
+    # catch last section if noisy
+    if noisy_start >= 0:
+        add_noisy_section(clip.duration, noisy_sections, noisy_start, (num_sections - 1))
+    
+    return noisy_sections
+    
+def is_noisy(chunk):
+    if (abs(np.amin(chunk)) > AUDIO_THRESHOLD):
+        return True
+    return False
+
+def add_noisy_section(seconds_upper_bound, sections, start, end):
     # pads sounded sections with silence
-    starting_chunk = start + SILENCE_PADDING_CHUNKS
-    ending_chunk = end - SILENCE_PADDING_CHUNKS
-
+    starting_chunk = start - SILENCE_PADDING_CHUNKS
     starting_second = chunk_index_to_seconds(starting_chunk)
-    ending_second = chunk_index_to_seconds(ending_chunk)
+    if starting_second < 0:
+        starting_second = 0
     starting_timestamp = seconds_to_timestamp(starting_second)
+
+    ending_chunk = end + SILENCE_PADDING_CHUNKS
+    ending_second = chunk_index_to_seconds(ending_chunk)
+    if ending_second > seconds_upper_bound:
+        ending_second = seconds_upper_bound
     ending_timestamp = seconds_to_timestamp(ending_second)
 
     sections.append([starting_timestamp, ending_timestamp])
@@ -98,7 +106,8 @@ def chunk_index_to_seconds(index):
 
 def seconds_to_timestamp(seconds):
     partial_seconds = seconds - int(seconds)
-    return "%s%.3f" % (time.strftime("%H:%M:%S", time.gmtime(seconds)), partial_seconds)
+    formatted_seconds = '{:.3f}'.format(partial_seconds).lstrip('0')
+    return "%s%s" % (time.strftime("%H:%M:%S", time.gmtime(seconds)), formatted_seconds)
 
 # needs rework to be add nodes for one video
 # def add_video_nodes(tree, file_paths):
@@ -134,6 +143,9 @@ class MLTFile:
         path = "./xml_templates/" + name + ".xml"
         tree = et.parse(path, et.XMLParser(remove_blank_text=True))
         return tree.getroot()
+
+    # def add_video_with_edits():
+
 
     def write(self):
         et.ElementTree(self.root).write(self.name, pretty_print=True)
