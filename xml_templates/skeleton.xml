@@ -23,7 +23,7 @@
     <property name="shotcut:audio">1</property>
     <property name="shotcut:name">A1</property>
   </playlist>
-    <tractor id="tractor0" title="Shotcut version 18.03.06" global_feed="1" in="00:00:00.000" out="00:00:46.033">
+    <tractor id="tractor0" title="Shotcut version 18.03.06" global_feed="1" in="00:00:00.000" out="10:00:00.000">
     <property name="shotcut">1</property>
     <track producer="background"/>
     <track producer="video_playlist"/>

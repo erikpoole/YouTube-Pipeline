@@ -33,28 +33,8 @@ def main():
         print("reading %s for noisy sections" % get_filename(path))
         noisy_sections = find_noisy_sections(path)
 
-        print("adding %s noisy sections to mlt file" % get_filename(path))
-        if len(noisy_sections) < 2:
-            # handle addition of two filters to one clip
-            continue
-
-        first_section = noisy_sections.pop(0)
-        first_producer = Producer(path, mlt_file.get_next_producer_id())
-        first_producer.add_filter(mlt_file.get_next_filter_id(), "fade_in", first_section[0], first_section[0] + 1)
-        mlt_file.add_producer(first_producer)
-
-        middle_producer = Producer(path, mlt_file.get_next_producer_id())
-        mlt_file.add_producer(middle_producer)
-
-        last_section = noisy_sections.pop()
-        final_producer = Producer(path, mlt_file.get_next_producer_id())
-        final_producer.add_filter(mlt_file.get_next_filter_id(), "fade_out", last_section[1] - 1, last_section[1])
-        mlt_file.add_producer(final_producer)
-
-        mlt_file.add_playlist_entry(first_producer.id, first_section[0], first_section[1])
-        for section in noisy_sections:
-            mlt_file.add_playlist_entry(middle_producer.id, section[0], section[1])
-        mlt_file.add_playlist_entry(final_producer.id, last_section[0], last_section[1])
+        print("adding %s to mlt file" % get_filename(path))
+        add_video_to_MLT(path, noisy_sections, mlt_file)
     
     mlt_file.write(os.path.join(output_path, date.today().strftime("%b-%d-%Y.mlt")))
 
@@ -125,6 +105,39 @@ def add_noisy_section(seconds_upper_bound, sections, start, end):
 
     sections.append([starting_second, ending_second])
 
+def add_video_to_MLT(path, noisy_sections, mlt_file):
+    if len(noisy_sections) == 0:
+        return
+
+    if len(noisy_sections) == 1:
+        noisy_section = noisy_sections[0]
+        # handle addition of two filters to one clip
+        producer = Producer(path, mlt_file.get_next_producer_id())
+        producer.add_filter(mlt_file.get_next_filter_id(), "fade_in", noisy_section[0], noisy_section[0] + 1)
+        producer.add_filter(mlt_file.get_next_filter_id(), "fade_out", noisy_section[1] - 1, noisy_section[1])
+
+        mlt_file.add_producer(producer)
+        mlt_file.add_playlist_entry(producer.id, noisy_section[0], noisy_section[1])
+        return
+
+    first_section = noisy_sections.pop(0)
+    last_section = noisy_sections.pop()
+
+    first_producer = Producer(path, mlt_file.get_next_producer_id())
+    first_producer.add_filter(mlt_file.get_next_filter_id(), "fade_in", first_section[0], first_section[0] + 1)
+    mlt_file.add_producer(first_producer)
+    mlt_file.add_playlist_entry(first_producer.id, first_section[0], first_section[1])
+
+    middle_producer = Producer(path, mlt_file.get_next_producer_id())
+    mlt_file.add_producer(middle_producer)
+    for section in noisy_sections:
+        mlt_file.add_playlist_entry(middle_producer.id, section[0], section[1])
+
+    last_producer = Producer(path, mlt_file.get_next_producer_id())
+    last_producer.add_filter(mlt_file.get_next_filter_id(), "fade_out", last_section[1] - 1, last_section[1])
+    mlt_file.add_producer(last_producer)
+    mlt_file.add_playlist_entry(last_producer.id, last_section[0], last_section[1])
+
 def chunk_index_to_seconds(index):
     return index * CHUNK_DURATION
 
@@ -160,7 +173,9 @@ class MLTFile:
 
     def add_producer(self, producer):
         # producers must be inserted above playlists and tractor to satisfy shotcut
-        self.root.insert(3 + self.producer_count, producer.root)
+        video_playlist_index = self.root.index(self.root.find(".//*[@id='video_playlist']"))
+
+        self.root.insert(video_playlist_index, producer.root)
 
     def add_playlist_entry(self, producer_number, starting_second, ending_second):
         video_playlist = self.root.find(".//*[@id='video_playlist']")
