@@ -22,8 +22,20 @@ def main():
     # os.mkdir(CLIPS_DIR)
     # file_paths = copy_pending_files()
 
+    print("creating basic mlt file")
     mlt = MLTFile(date.today().strftime("%b-%d-%Y.mlt"))
-    print(find_noisy_sections("audio_test_2.mp4"))
+
+    print("reading file for noisy sections")
+    noisy_sections = find_noisy_sections("audio_test_2.mp4")
+    print("sections found:")
+    for section in noisy_sections:
+        print(section)
+
+    print("adding noisy sections to mlt file")
+    producer_number = mlt.add_producer("audio_test_2.mp4")
+    for section in noisy_sections:
+        mlt.add_playlist_entry(producer_number, section[0], section[1])
+
     mlt.write()
 
 # moving files maybe not necessary if we're not actually editing files, just creating xml
@@ -109,46 +121,51 @@ def seconds_to_timestamp(seconds):
     formatted_seconds = '{:.3f}'.format(partial_seconds).lstrip('0')
     return "%s%s" % (time.strftime("%H:%M:%S", time.gmtime(seconds)), formatted_seconds)
 
-# needs rework to be add nodes for one video
-# def add_video_nodes(tree, file_paths):
-#     video_playlist = tree.find(".//*[@id='video_playlist']")
-#     for index, path in enumerate(file_paths):
-#         clip_length = VideoFileClip(path).duration
-
-#         # add playlist entry
-#         entry = et.Element('entry')
-#         entry.attrib["producer"] = str(index)
-#         entry.attrib["in"] = "00:00:00.000"
-#         entry.attrib["out"] = seconds_to_timestamp(clip_length)
-#         video_playlist.append(entry)
-        
-#         # add producer entry
-#         producer = get_element_from_template("producer")
-#         producer.attrib["id"] = str(index)
-#         producer.attrib["out"] = "00:00:" + str(clip_length)
-#         producer.find(".//*[@name='length']").text = "00:00:" + str(clip_length)
-#         producer.find(".//*[@name='resource']").text = path
-#         producer.find(".//*[@name='shotcut:caption']").text = path
-#         producer.find(".//*[@name='shotcut:detail']").text = path
-#         # producers must be inserted above playlists and tractor to satisfy shotcut
-#         tree.insert(2 + index, producer)
-
 class MLTFile:
     def __init__(self, name):
         self.name = name
         self.root = self.__get_element_from_template("skeleton")
-        self.producer_number = 0
+        self.producer_count = 0
 
     def __get_element_from_template(self, name):
         path = "./xml_templates/" + name + ".xml"
         tree = et.parse(path, et.XMLParser(remove_blank_text=True))
         return tree.getroot()
 
-    # def add_video_with_edits():
+    def add_producer(self, path):
+        clip = VideoFileClip(path, audio_fps=AUDIO_FPS)
+        index = self.producer_count
 
+        producer = self.__get_element_from_template("producer")
+        producer.attrib["id"] = str(index)
+        producer.attrib["out"] = seconds_to_timestamp(clip.duration)
+        producer.find(".//*[@name='length']").text = seconds_to_timestamp(clip.duration)
+        producer.find(".//*[@name='resource']").text = path
+        producer.find(".//*[@name='shotcut:caption']").text = path
+        producer.find(".//*[@name='shotcut:detail']").text = path
+
+        # producers must be inserted above playlists and tractor to satisfy shotcut
+        self.root.insert(4 + index, producer)
+        self.producer_count = index + 1
+
+        return index
+
+    # def add_fade_in_producer(self, path):
+
+    # def add_fade_out_producer(self, path):
+
+    def add_playlist_entry(self, producer_number, starting_timestamp, ending_timestamp):
+        video_playlist = self.root.find(".//*[@id='video_playlist']")
+
+        entry = et.Element('entry')
+        entry.attrib["producer"] = str(producer_number)
+        entry.attrib["in"] = starting_timestamp
+        entry.attrib["out"] = ending_timestamp
+
+        video_playlist.append(entry)
 
     def write(self):
-        et.ElementTree(self.root).write(self.name, pretty_print=True)
+        et.ElementTree(self.root).write(self.name, pretty_print=True, xml_declaration=True, encoding="UTF-8")
 
 def cleanup_last_run():
     if os.path.exists(CLIPS_DIR):
