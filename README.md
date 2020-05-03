@@ -10,7 +10,7 @@ Setup -
 4) Youtube API integration
 
 Complete - 
-1) Find python audio library (won't use)
+1) Find python audio library (won't use - instead writing to mlt file)
 1) Read in audio
 1) Create .mlt file
 1) Find blank space

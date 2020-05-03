@@ -34,9 +34,10 @@ def main():
         noisy_sections = find_noisy_sections(path)
 
         print("adding %s noisy sections to mlt file" % get_filename(path))
-        producer_number = mlt_file.add_producer(path)
+        producer = Producer(path, mlt_file.get_next_producer_id())
+        mlt_file.add_producer(producer)
         for section in noisy_sections:
-            mlt_file.add_playlist_entry(producer_number, section[0], section[1])
+            mlt_file.add_playlist_entry(producer.id, section[0], section[1])
     
     mlt_file.write(os.path.join(output_path, date.today().strftime("%b-%d-%Y.mlt")))
 
@@ -48,7 +49,8 @@ def move_files(original_directory, new_directory):
     new_paths = []
     for index, original_path in enumerate(original_paths):
         new_path = os.path.join(new_directory, str(index) + ".mp4")
-        shutil.move(original_path, new_path)
+        # TODO change to shutil.move when pipeline is finished
+        shutil.copy(original_path, new_path)
         new_paths.append(new_path)
 
     return new_paths
@@ -119,38 +121,31 @@ def seconds_to_timestamp(seconds):
 def get_filename(path):
     return path.split("/")[-1]
 
+def get_element_from_template(name):
+    path = "./xml_templates/" + name + ".xml"
+    tree = et.parse(path, et.XMLParser(remove_blank_text=True))
+    return tree.getroot()
+
 class MLTFile:
     def __init__(self):
-        self.root = self.__get_element_from_template("skeleton")
+        self.root = get_element_from_template("skeleton")
         self.producer_count = 0
+        self.filter_count = 0
+    
+    def get_next_producer_id(self):
+        return self.__get_next_id("producer_count")
+    
+    def get_next_filter_id(self):
+        return self.__get_next_id("filter_count")
 
-    def __get_element_from_template(self, name):
-        path = "./xml_templates/" + name + ".xml"
-        tree = et.parse(path, et.XMLParser(remove_blank_text=True))
-        return tree.getroot()
+    def __get_next_id(self, id_type):
+        id = getattr(self, id_type)
+        setattr(self, id_type, id + 1)
+        return str(id)
 
-    def add_producer(self, path):
-        clip = VideoFileClip(path, audio_fps=AUDIO_FPS)
-        index = self.producer_count
-        filename = get_filename(path)
-
-        producer = self.__get_element_from_template("producer")
-        producer.attrib["id"] = str(index)
-        producer.attrib["out"] = seconds_to_timestamp(clip.duration)
-        producer.find(".//*[@name='length']").text = seconds_to_timestamp(clip.duration)
-        producer.find(".//*[@name='resource']").text = filename
-        producer.find(".//*[@name='shotcut:caption']").text = filename
-        producer.find(".//*[@name='shotcut:detail']").text = filename
-
+    def add_producer(self, producer):
         # producers must be inserted above playlists and tractor to satisfy shotcut
-        self.root.insert(4 + index, producer)
-        self.producer_count = index + 1
-
-        return index
-
-    # def add_fade_in_producer(self, path):
-
-    # def add_fade_out_producer(self, path):
+        self.root.insert(3 + self.producer_count, producer.root)
 
     def add_playlist_entry(self, producer_number, starting_timestamp, ending_timestamp):
         video_playlist = self.root.find(".//*[@id='video_playlist']")
@@ -164,5 +159,23 @@ class MLTFile:
 
     def write(self, path):
         et.ElementTree(self.root).write(path, pretty_print=True, xml_declaration=True, encoding="UTF-8")
+
+class Producer:
+    def __init__(self, path, id):
+        duration = VideoFileClip(path, audio_fps=AUDIO_FPS).duration
+        filename = get_filename(path)
+
+        root = get_element_from_template("producer")
+        root.attrib["id"] = id
+        root.attrib["out"] = seconds_to_timestamp(duration)
+        root.find(".//*[@name='length']").text = seconds_to_timestamp(duration)
+        root.find(".//*[@name='resource']").text = filename
+        root.find(".//*[@name='shotcut:caption']").text = filename
+        root.find(".//*[@name='shotcut:detail']").text = filename
+
+        self.root = root
+        self.id = id
+        self.duration = duration
+        self.filename = filename
 
 main()
