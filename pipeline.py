@@ -7,51 +7,48 @@ from moviepy.editor import VideoFileClip
 import numpy as np
 import lxml.etree as et
 
-CLIPS_DIR = "./clips"
+VIDEOS_PATH = "/mnt/c/Users/Mahkumazahn/Videos"
+PENDING_PATH = VIDEOS_PATH + "/Pending"
 VIDEO_FPS = 30
 AUDIO_FPS = 48000
 CHUNK_DURATION = .1             # in seconds
 SILENT_CHUNKS_REQUIRED = 10
-SILENCE_PADDING_CHUNKS = 2
+# TODO SILENCE_PADDING_CHUNKS is somewhat misleading, since value will be added on both sides of silence (also mismatched for start and end of video...)
+SILENCE_PADDING_CHUNKS = 3
 AUDIO_THRESHOLD = .03           # stolen from jumpcutter, might need tweaking
 
 def main():
-    # cleanup_last_run()
+    print("sorting and moving files")
+    output_path = "%s/%s" % (VIDEOS_PATH, date.today().strftime("%b-%d-%Y"))
 
-    # print("moving files from pending")
-    # os.mkdir(CLIPS_DIR)
-    # file_paths = copy_pending_files()
+    if not os.path.exists(output_path):
+        os.mkdir(output_path)
+
+    file_paths = move_files(PENDING_PATH, output_path)
 
     print("creating basic mlt file")
-    mlt = MLTFile(date.today().strftime("%b-%d-%Y.mlt"))
+    mlt_file = MLTFile()
 
-    print("reading file for noisy sections")
-    noisy_sections = find_noisy_sections("audio_test_2.mp4")
-    print("sections found:")
-    for section in noisy_sections:
-        print(section)
+    for path in file_paths:
+        print("reading %s for noisy sections" % get_filename(path))
+        noisy_sections = find_noisy_sections(path)
 
-    print("adding noisy sections to mlt file")
-    producer_number = mlt.add_producer("audio_test_2.mp4")
-    for section in noisy_sections:
-        mlt.add_playlist_entry(producer_number, section[0], section[1])
+        print("adding %s noisy sections to mlt file" % get_filename(path))
+        producer_number = mlt_file.add_producer(path)
+        for section in noisy_sections:
+            mlt_file.add_playlist_entry(producer_number, section[0], section[1])
+    
+    mlt_file.write(os.path.join(output_path, date.today().strftime("%b-%d-%Y.mlt")))
 
-    mlt.write()
-
-# moving files maybe not necessary if we're not actually editing files, just creating xml
-def copy_pending_files():
-    PENDING_PATH = "/mnt/c/Users/Mahkumazahn/Videos/Pending"
-
-    original_names = os.listdir(PENDING_PATH)
-    original_paths = [os.path.join(PENDING_PATH, original_name) for original_name in original_names]
+def move_files(original_directory, new_directory):
+    original_names = os.listdir(original_directory)
+    original_paths = [os.path.join(original_directory, original_name) for original_name in original_names]
     original_paths.sort(key=lambda original_path: os.path.getctime(original_path))
 
     new_paths = []
     for index, original_path in enumerate(original_paths):
-        new_path = os.path.join(CLIPS_DIR, str(index) + ".mp4")
-
-        # TODO: use shutil.move when pipeline is complete
-        shutil.copy(original_path, new_path)
+        new_path = os.path.join(new_directory, str(index) + ".mp4")
+        shutil.move(original_path, new_path)
         new_paths.append(new_path)
 
     return new_paths
@@ -59,8 +56,6 @@ def copy_pending_files():
 def find_noisy_sections(path):
     # not handling channels
     clip = VideoFileClip(path, audio_fps=AUDIO_FPS)
-    print(clip.duration)
-    print(clip.audio.fps)
 
     # chunk_duration is in seconds (e.g. "1" equals 44100), last chunk will have empty audio to pad the end
     # each sound value will have a range from 1 to -1, where 1 and -1 represent max volume
@@ -121,9 +116,11 @@ def seconds_to_timestamp(seconds):
     formatted_seconds = '{:.3f}'.format(partial_seconds).lstrip('0')
     return "%s%s" % (time.strftime("%H:%M:%S", time.gmtime(seconds)), formatted_seconds)
 
+def get_filename(path):
+    return path.split("/")[-1]
+
 class MLTFile:
-    def __init__(self, name):
-        self.name = name
+    def __init__(self):
         self.root = self.__get_element_from_template("skeleton")
         self.producer_count = 0
 
@@ -135,14 +132,15 @@ class MLTFile:
     def add_producer(self, path):
         clip = VideoFileClip(path, audio_fps=AUDIO_FPS)
         index = self.producer_count
+        filename = get_filename(path)
 
         producer = self.__get_element_from_template("producer")
         producer.attrib["id"] = str(index)
         producer.attrib["out"] = seconds_to_timestamp(clip.duration)
         producer.find(".//*[@name='length']").text = seconds_to_timestamp(clip.duration)
-        producer.find(".//*[@name='resource']").text = path
-        producer.find(".//*[@name='shotcut:caption']").text = path
-        producer.find(".//*[@name='shotcut:detail']").text = path
+        producer.find(".//*[@name='resource']").text = filename
+        producer.find(".//*[@name='shotcut:caption']").text = filename
+        producer.find(".//*[@name='shotcut:detail']").text = filename
 
         # producers must be inserted above playlists and tractor to satisfy shotcut
         self.root.insert(4 + index, producer)
@@ -164,14 +162,7 @@ class MLTFile:
 
         video_playlist.append(entry)
 
-    def write(self):
-        et.ElementTree(self.root).write(self.name, pretty_print=True, xml_declaration=True, encoding="UTF-8")
-
-def cleanup_last_run():
-    if os.path.exists(CLIPS_DIR):
-        shutil.rmtree(CLIPS_DIR)
-
-    if os.path.exists("./TEMP"):
-        shutil.rmtree("./TEMP")
+    def write(self, path):
+        et.ElementTree(self.root).write(path, pretty_print=True, xml_declaration=True, encoding="UTF-8")
 
 main()
