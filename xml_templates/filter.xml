@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<filter id="PLACEHOLDER" in="PLACEHOLDER" out="PLACEHOLDER">
+  <property name="start">1</property>
+  <property name="level">PLACEHOLDER</property>
+  <property name="mlt_service">PLACEHOLDER</property>
+  <property name="shotcut:filter">PLACEHOLDER</property>
+  <property name="alpha">1</property>
+</filter>
